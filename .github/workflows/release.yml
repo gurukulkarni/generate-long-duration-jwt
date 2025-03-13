@@ -1,0 +1,117 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo test --all-features
+
+  # Check formatting with rustfmt
+  formatting:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Ensure rustfmt is installed and setup problem matcher
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@v1
+
+  build:
+    needs: [test, formatting]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generate-long-duration-jwt-${{ matrix.os }}
+          path: target/release/generate-long-duration-jwt
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          args: -v --unreleased --bump --strip header --repository=${{ github.workspace }}
+        env:
+          OUTPUT: CHANGES.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: 'Print the next Version'
+        run: |
+          echo "next_version=${{ steps.git-cliff.outputs.version }}"
+          export next_version_docker_tag=$(echo ${{ steps.git-cliff.outputs.version }} | awk -F-v '{print $2}')
+          echo "next-version-docker-tag=$next_version_docker_tag" >> $GITHUB_ENV
+
+      - name: 'Print the changelog for ${{ steps.git-cliff.outputs.version }}'
+        run: cat "${{ steps.git-cliff.outputs.changelog }}"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: generate-long-duration-jwt-ubuntu-latest
+          path: ./artifacts/linux
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: generate-long-duration-jwt-macos-latest
+          path: ./artifacts/macos
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.git-cliff.outputs.version }}
+          release_name: Release ${{ steps.git-cliff.outputs.version }}
+          draft: false
+          prerelease: false
+          body_path: CHANGES.md
+
+      - name: Upload Release Asset (macOS)
+        uses: actions/upload-release-asset@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/macos/generate-long-duration-jwt
+          asset_name: generate-long-duration-jwt-macos
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (Linux)
+        uses: actions/upload-release-asset@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/linux/generate-long-duration-jwt
+          asset_name: generate-long-duration-jwt-linux
+          asset_content_type: application/octet-stream
