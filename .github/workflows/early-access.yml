@@ -6,7 +6,7 @@ on:
 
 jobs:
   precheck:
-    if: github.repository == 'jreleaser/helloworld-rustx' && startsWith(github.event.head_commit.message, 'Releasing version') != true
+    if: github.repository == 'gurukulkarni/generate-long-duration-jwt' && contains(github.event.head_commit.message, 'Releasing version') != true
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.vars.outputs.VERSION }}
@@ -29,7 +29,7 @@ jobs:
   build:
     needs: [ precheck ]
     if: endsWith(${{ needs.precheck.outputs.VERSION }}, '-SNAPSHOT')
-    uses: jreleaser/helloworld-rustx/.github/workflows/reusable-build.yml@main
+    uses: gurukulkarni/generate-long-duration-jwt/.github/workflows/reusable-build.yml@main
     with:
       version: ${{ needs.precheck.outputs.VERSION }}
 
@@ -49,7 +49,7 @@ jobs:
         with:
           pattern: artifact-*
           merge-multiple: true
-          path: out/jreleaser/assemble/helloworld/archive
+          path: out/jreleaser/assemble/generate-long-duration-jwt/archive
 
       - name: Release
         uses: jreleaser/release-action@v2

@@ -28,11 +28,15 @@ jobs:
         with:
           toolchain: stable
      
-      - name: Setup zigbuild
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --locked cargo-zigbuild
+      # - name: 'Setup Rust & Cargo'
+      #   uses: actions-rs/cargo@v1
+      #   with:
+      #     command: install
+      #     args: --locked cargo-zigbuild
+
+      - name: 'Install PreRequisites'
+        run: sudo apt-get install pkg-config libssl-dev
+        shell: bash
           
       - name: Assemble
         uses: jreleaser/release-action@v2

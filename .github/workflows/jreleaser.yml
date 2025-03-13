@@ -11,6 +11,12 @@ jobs:
   precheck:
     name: Precheck
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      actions: write
+      checks: write
+      packages: write
     outputs:
       VERSION: ${{ steps.vars.outputs.VERSION }}
     steps:
@@ -30,7 +36,7 @@ jobs:
 
   build:
     needs: [ precheck ]
-    uses: jreleaser/helloworld-rustx/.github/workflows/reusable-build.yml@main
+    uses: gurukulkarni/generate-long-duration-jwt/.github/workflows/reusable-build.yml@main
     with:
       version: ${{ needs.precheck.outputs.VERSION }}
 
@@ -49,7 +55,7 @@ jobs:
         with:
           pattern: artifact-*
           merge-multiple: true
-          path: out/jreleaser/assemble/helloworld/archive
+          path: out/jreleaser/assemble/generate-long-duration-jwt/archive
 
       - name: Commit version
         run: |
