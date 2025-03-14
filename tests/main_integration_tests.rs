@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use assert_cmd::Command;
-    use serial_test::serial;
     use predicates::prelude::*;
+    use serial_test::serial;
     use std::env;
 
     fn set_env_vars(access_token: Option<&str>, refresh_token: Option<&str>) {
@@ -33,12 +33,18 @@ mod tests {
             .create();
 
         let mut cmd = Command::cargo_bin("generate-long-duration-jwt").unwrap();
-        cmd.arg("--url").arg(&server.url())
-            .arg("--value").arg("2")
-            .arg("--unit").arg("days")
-            .arg("--access-token").arg("OPERATOR_ACCESS_TOKEN")
-            .arg("--refresh-token").arg("OPERATOR_REFRESH_TOKEN")
-            .arg("--output").arg("test_output.json");
+        cmd.arg("--url")
+            .arg(&server.url())
+            .arg("--value")
+            .arg("2")
+            .arg("--unit")
+            .arg("days")
+            .arg("--access-token")
+            .arg("OPERATOR_ACCESS_TOKEN")
+            .arg("--refresh-token")
+            .arg("OPERATOR_REFRESH_TOKEN")
+            .arg("--output")
+            .arg("test_output.json");
 
         cmd.assert().success();
         mock.assert();
@@ -53,14 +59,22 @@ mod tests {
         let mock = server.mock("POST", "/v1/create-new-jwt").expect(0).create();
 
         let mut cmd = Command::cargo_bin("generate-long-duration-jwt").unwrap();
-        cmd.arg("--url").arg(&server.url())
-            .arg("--value").arg("2")
-            .arg("--unit").arg("days")
-            .arg("--access-token").arg("OPERATOR_ACCESS_TOKEN")
-            .arg("--refresh-token").arg("OPERATOR_REFRESH_TOKEN")
-            .arg("--output").arg("test_output.json");
+        cmd.arg("--url")
+            .arg(&server.url())
+            .arg("--value")
+            .arg("2")
+            .arg("--unit")
+            .arg("days")
+            .arg("--access-token")
+            .arg("OPERATOR_ACCESS_TOKEN")
+            .arg("--refresh-token")
+            .arg("OPERATOR_REFRESH_TOKEN")
+            .arg("--output")
+            .arg("test_output.json");
 
-        cmd.assert().failure().stderr(predicate::str::contains("environment variable 'OPERATOR_ACCESS_TOKEN'"));
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("environment variable 'OPERATOR_ACCESS_TOKEN'"));
         mock.assert();
     }
 
@@ -73,12 +87,18 @@ mod tests {
         let mock = server.mock("POST", "/v1/create-new-jwt").expect(0).create();
 
         let mut cmd = Command::cargo_bin("generate-long-duration-jwt").unwrap();
-        cmd.arg("--url").arg(&server.url())
-            .arg("--value").arg("2")
-            .arg("--unit").arg("days")
-            .arg("--access-token").arg("OPERATOR_ACCESS_TOKEN")
-            .arg("--refresh-token").arg("OPERATOR_REFRESH_TOKEN")
-            .arg("--output").arg("test_output.json");
+        cmd.arg("--url")
+            .arg(&server.url())
+            .arg("--value")
+            .arg("2")
+            .arg("--unit")
+            .arg("days")
+            .arg("--access-token")
+            .arg("OPERATOR_ACCESS_TOKEN")
+            .arg("--refresh-token")
+            .arg("OPERATOR_REFRESH_TOKEN")
+            .arg("--output")
+            .arg("test_output.json");
 
         cmd.assert().failure().stderr(predicate::str::contains("OPERATOR_REFRESH_TOKEN"));
         mock.assert();
@@ -96,15 +116,20 @@ mod tests {
             .create();
 
         let mut cmd = Command::cargo_bin("generate-long-duration-jwt").unwrap();
-        cmd.arg("--url").arg(&server.url())
-            .arg("--value").arg("2")
-            .arg("--unit").arg("days")
-            .arg("--access-token").arg("OPERATOR_ACCESS_TOKEN")
-            .arg("--refresh-token").arg("OPERATOR_REFRESH_TOKEN")
-            .arg("--output").arg("test_output.json");
+        cmd.arg("--url")
+            .arg(&server.url())
+            .arg("--value")
+            .arg("2")
+            .arg("--unit")
+            .arg("days")
+            .arg("--access-token")
+            .arg("OPERATOR_ACCESS_TOKEN")
+            .arg("--refresh-token")
+            .arg("OPERATOR_REFRESH_TOKEN")
+            .arg("--output")
+            .arg("test_output.json");
 
         cmd.assert().success().stdout(predicate::str::contains("Output written to"));
         mock.assert();
     }
-
 }

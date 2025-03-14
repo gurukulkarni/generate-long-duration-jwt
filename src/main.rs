@@ -6,24 +6,53 @@ use std::fs::File;
 use std::io::Write;
 
 #[derive(Parser)]
-#[clap(name = "generate-long-duration-jwt", version = "1.0", author = "Author Name <kulkarni@safenow.de>", about = "Generates a long duration JWT")]
+#[clap(
+    name = "generate-long-duration-jwt",
+    version = "1.0",
+    author = "Author Name <kulkarni@safenow.de>",
+    about = "Generates a long duration JWT"
+)]
 pub struct Cli {
     #[clap(short = 'l', long = "url", value_name = "URL", help = "Base URL of account authentication service")]
     url: String,
 
-    #[clap(short = 'v', long = "value", value_name = "TIME-VALUE", default_value_t = 1, help = "how long should the access token be valid for")]
+    #[clap(
+        short = 'v',
+        long = "value",
+        value_name = "TIME-VALUE",
+        default_value_t = 1,
+        help = "how long should the access token be valid for"
+    )]
     value: i64,
 
     #[clap(short = 'u', long = "unit", value_name = "TIME-UNIT", value_enum, default_value_t = TimeUnit::Hours, help = "unit of time for the value")]
     unit: TimeUnit,
 
-    #[clap(short = 'a', long = "access-token", value_name = "ENVIRONEMNT_VARIABLE_NAME", default_value = "OPERATOR_ACCESS_TOKEN", help = "Environment variable name for the access token, this needs to be present in the environment else the program will exit")]
+    #[clap(
+        short = 'a',
+        long = "access-token",
+        value_name = "ENVIRONEMNT_VARIABLE_NAME",
+        default_value = "OPERATOR_ACCESS_TOKEN",
+        help = "Environment variable name for the access token, this needs to be present in the environment else the program will exit"
+    )]
     access_token_env_var_name: String,
 
-    #[clap(short = 'r', long = "refresh-token", value_name = "ENVIRONEMNT_VARIABLE_NAME", default_value = "OPERATOR_REFRESH_TOKEN", help = "Environment variable name for the refresh token, this needs to be present in the environment else the program will exit")]
+    #[clap(
+        short = 'r',
+        long = "refresh-token",
+        value_name = "ENVIRONEMNT_VARIABLE_NAME",
+        default_value = "OPERATOR_REFRESH_TOKEN",
+        help = "Environment variable name for the refresh token, this needs to be present in the environment else the program will exit"
+    )]
     refresh_token_env_var_name: String,
 
-    #[clap(short = 'o', long = "output", value_name = "OUTPUT-FILE", default_value = "long_duration_jwt.json", help = "Output file for the success response JSON")]
+    #[clap(
+        short = 'o',
+        long = "output",
+        value_name = "OUTPUT-FILE",
+        default_value = "long_duration_jwt.json",
+        help = "Output file for the success response JSON"
+    )]
     output: String,
 }
 
