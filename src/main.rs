@@ -167,3 +167,81 @@ async fn main() {
         std::process::exit(1); // Exit with error code 1
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_jwt_response_serialization() {
+        let jwt_response = JwtResponse {
+            person_id: "12345".to_string(),
+            access_token: "access_token".to_string(),
+            refresh_token: "refresh_token".to_string(),
+        };
+        let json = serde_json::to_string(&jwt_response).unwrap();
+        assert!(json.contains("\"personId\":\"12345\""));
+        assert!(json.contains("\"accessToken\":\"access_token\""));
+        assert!(json.contains("\"refreshToken\":\"refresh_token\""));
+    }
+
+    #[test]
+    fn test_jwt_response_deserialization() {
+        let json = r#"{"personId":"12345","accessToken":"access_token","refreshToken":"refresh_token"}"#;
+        let jwt_response: JwtResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(jwt_response.person_id, "12345");
+        assert_eq!(jwt_response.access_token, "access_token");
+        assert_eq!(jwt_response.refresh_token, "refresh_token");
+    }
+
+    #[test]
+    fn test_error_response_serialization() {
+        let error_response = ErrorResponse {
+            error_type: "type".to_string(),
+            class: "class".to_string(),
+            error_code: 123,
+            error_id: "error_id".to_string(),
+            timestamp_millis: 1234567890,
+        };
+        let json = serde_json::to_string(&error_response).unwrap();
+        assert!(json.contains("\"type\":\"type\""));
+        assert!(json.contains("\"class\":\"class\""));
+        assert!(json.contains("\"errorCode\":123"));
+        assert!(json.contains("\"errorId\":\"error_id\""));
+        assert!(json.contains("\"timestampMillis\":1234567890"));
+    }
+
+    #[test]
+    fn test_error_response_deserialization() {
+        let json = r#"{"type":"type","class":"class","errorCode":123,"errorId":"error_id","timestampMillis":1234567890}"#;
+        let error_response: ErrorResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(error_response.error_type, "type");
+        assert_eq!(error_response.class, "class");
+        assert_eq!(error_response.error_code, 123);
+        assert_eq!(error_response.error_id, "error_id");
+        assert_eq!(error_response.timestamp_millis, 1234567890);
+    }
+
+    #[test]
+    fn test_jwt_request_serialization() {
+        let jwt_request = JwtRequest {
+            refresh_token: "refresh_token".to_string(),
+            unit: "HOURS".to_string(),
+            value: 1,
+        };
+        let json = serde_json::to_string(&jwt_request).unwrap();
+        assert!(json.contains("\"refreshToken\":\"refresh_token\""));
+        assert!(json.contains("\"unit\":\"HOURS\""));
+        assert!(json.contains("\"value\":1"));
+    }
+
+    #[test]
+    fn test_jwt_request_deserialization() {
+        let json = r#"{"refreshToken":"refresh_token","unit":"HOURS","value":1}"#;
+        let jwt_request: JwtRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(jwt_request.refresh_token, "refresh_token");
+        assert_eq!(jwt_request.unit, "HOURS");
+        assert_eq!(jwt_request.value, 1);
+    }
+}

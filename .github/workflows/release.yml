@@ -25,13 +25,9 @@ jobs:
       - name: Rustfmt Check
         uses: actions-rust-lang/rustfmt@v1
 
-  build:
+  build-and-release:
     needs: [test, formatting]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,19 +47,19 @@ jobs:
       - name: Build
         run: cargo zigbuild --target x86_64-unknown-linux-musl --release
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: generate-long-duration-jwt-${{ matrix.os }}
-          path: target/release/generate-long-duration-jwt
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: linux-musl-generate-long-duration-jwt
+      #     path: ./target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+  # release:
+  #   needs: build
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
       - name: Generate a changelog
         uses: orhun/git-cliff-action@v4
@@ -83,11 +79,11 @@ jobs:
       - name: 'Print the changelog for ${{ steps.git-cliff.outputs.version }}'
         run: cat "${{ steps.git-cliff.outputs.changelog }}"
 
-      - name: Download linux artifacts
-        id: linux-binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: generate-long-duration-jwt-ubuntu-latest
+      # - name: Download linux artifacts
+      #   id: linux-binaries
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: generate-long-duration-jwt-ubuntu-latest-musl
 
       # - name: Download macos artifacts
       #   id: mac-os-binaries
@@ -102,24 +98,27 @@ jobs:
           tag: v${{ steps.git-cliff.outputs.version }}
           bodyFile: CHANGES.md
           prerelease: true
+          artifacts: ./target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt
+          artifactContentType: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Asset (macOS)
-        uses: actions/upload-release-asset@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_name: generate-long-duration-jwt-macos-latest
-          asset_content_type: application/octet-stream
+      # - name: Upload Release Asset (macOS)
+      #   uses: actions/upload-release-asset@v2
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: generate-long-duration-jwt-macos-latest
+      #     asset_content_type: application/octet-stream
+      #     asset_path: ./target/release/generate-long-duration-jwt
 
-      - name: Upload Release Asset (Linux)
-        uses: actions/upload-release-asset@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/linux/generate-long-duration-jwt
-          asset_name: generate-long-duration-jwt-linux-latest
-          asset_content_type: application/octet-stream
+      # - name: Upload Release Asset (Linux)
+      #   uses: actions/upload-release-asset@v2
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+      #     asset_name: generate-long-duration-jwt-linux-latest-musl
+      #     asset_content_type: application/octet-stream
+      #     asset_path: ./target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt
