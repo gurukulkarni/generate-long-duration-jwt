@@ -30,16 +30,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v1
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+     
+      - name: 'Setup zigbuild'
+        run: cargo install --locked cargo-zigbuild
+      
+      - name: Add must target
+        run: rustup target add x86_64-unknown-linux-musl
 
       - name: Build
-        run: cargo build --release
+        run: cargo zigbuild --target x86_64-unknown-linux-musl --release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -73,28 +83,27 @@ jobs:
       - name: 'Print the changelog for ${{ steps.git-cliff.outputs.version }}'
         run: cat "${{ steps.git-cliff.outputs.changelog }}"
 
-      - name: Download artifacts
+      - name: Download linux artifacts
+        id: linux-binaries
         uses: actions/download-artifact@v4
         with:
           name: generate-long-duration-jwt-ubuntu-latest
-          path: ./artifacts/linux
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: generate-long-duration-jwt-macos-latest
-          path: ./artifacts/macos
+
+      # - name: Download macos artifacts
+      #   id: mac-os-binaries
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: generate-long-duration-jwt-macos-latest
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v2
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.git-cliff.outputs.version }}
+          bodyFile: CHANGES.md
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.git-cliff.outputs.version }}
-          release_name: Release ${{ steps.git-cliff.outputs.version }}
-          draft: false
-          prerelease: false
-          body_path: CHANGES.md
 
       - name: Upload Release Asset (macOS)
         uses: actions/upload-release-asset@v2
@@ -102,8 +111,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/macos/generate-long-duration-jwt
-          asset_name: generate-long-duration-jwt-macos
+          asset_name: generate-long-duration-jwt-macos-latest
           asset_content_type: application/octet-stream
 
       - name: Upload Release Asset (Linux)
@@ -113,5 +121,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./artifacts/linux/generate-long-duration-jwt
-          asset_name: generate-long-duration-jwt-linux
+          asset_name: generate-long-duration-jwt-linux-latest
           asset_content_type: application/octet-stream
