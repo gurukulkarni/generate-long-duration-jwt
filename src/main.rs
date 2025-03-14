@@ -63,8 +63,11 @@ impl Cli {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct JwtResponse {
+    #[serde(rename = "personId")]
     person_id: String,
+    #[serde(rename = "accessToken")]
     access_token: String,
+    #[serde(rename = "refreshToken")]
     refresh_token: String,
 }
 
