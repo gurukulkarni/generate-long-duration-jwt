@@ -1,4 +1,4 @@
-name: Release
+name: Test, Format, Build and Release
 on:
   workflow_dispatch:
 jobs:
@@ -31,16 +31,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Zig
         uses: mlugg/setup-zig@v1
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: 'Setup zigbuild'
-        run: cargo install --locked cargo-zigbuild
+        run: cargo install --locked cargo-zigbuild cargo-bump
       - name: Add must target
         run: rustup target add x86_64-unknown-linux-musl
-      - name: Build
-        run: cargo zigbuild --target x86_64-unknown-linux-musl --release
       - name: Generate a changelog
         uses: orhun/git-cliff-action@v4
         id: git-cliff
@@ -49,13 +49,16 @@ jobs:
         env:
           OUTPUT: CHANGES.md
           GITHUB_REPO: ${{ github.repository }}
-      - name: 'Print the next Version'
+      - name: 'Bump the version and Print It'
         run: |
           echo "next_version=${{ steps.git-cliff.outputs.version }}"
-          export next_version_docker_tag=$(echo ${{ steps.git-cliff.outputs.version }} | awk -F-v '{print $2}')
-          echo "next-version-docker-tag=$next_version_docker_tag" >> $GITHUB_ENV
+          export next_version_plain=$(echo ${{ steps.git-cliff.outputs.version }} | awk -F-v '{print $2}')
+          echo "next-version-plain=$next_version_plain" >> $GITHUB_ENV
+          cargo bump $next_version_plain
       - name: 'Print the changelog for ${{ steps.git-cliff.outputs.version }}'
         run: cat "${{ steps.git-cliff.outputs.changelog }}"
+      - name: Build
+        run: cargo zigbuild --target x86_64-unknown-linux-musl --release
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1
