@@ -23,7 +23,7 @@ jobs:
         env:
           PROJECT_NAME: generate-long-duration-jwt
           CARGO_INCREMENTAL: 0
-          RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort
+          RUSTFLAGS: -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort
           RUSTDOCFLAGS: -Cpanic=abort
       - name: Upload test results
         uses: EnricoMi/publish-unit-test-result-action@v1
