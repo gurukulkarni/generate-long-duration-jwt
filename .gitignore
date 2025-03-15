@@ -19,3 +19,5 @@ target/
 
 # python3 virtualenv
 .venv/**
+
+.idea/**

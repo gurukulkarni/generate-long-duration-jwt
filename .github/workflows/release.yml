@@ -1,17 +1,45 @@
 name: Test, Format, Build and Release
 on:
   workflow_dispatch:
+    inputs:
+      skip_release:
+        description: 'Skip the release step'
+        required: false
+        default: 'false'
 jobs:
-  test:
-    name: cargo test
+  cargo-test:
+    permissions:
+      checks: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo test --all-features
+      - run: |
+          cargo install cargo2junit grcov rust-covfix;
+          cargo test --features coverage $CARGO_OPTIONS -- -Z unstable-options --format json | cargo2junit > results.xml;
+          zip -0 ccov.zip `find . \( -name "$PROJECT_NAME_UNDERSCORE*.gc*" \) -print`;
+          grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" --ignore "tests/*" -o lcov.info;
+          rust-covfix -o lcov_correct.info lcov.info;
+        env:
+          PROJECT_NAME_UNDERSCORE: generate-long-duration-jwt
+          CARGO_INCREMENTAL: 0
+          RUSTFLAGS: -Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort
+          RUSTDOCFLAGS: -Cpanic=abort
+      - name: Upload test results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          check_name: Test Results
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          files: results.xml
+      - name: Upload to CodeCov
+        uses: codecov/codecov-action@v1
+        with:
+          # required for private repositories:
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./lcov.info
+          fail_ci_if_error: true
   # Check formatting with rustfmt
-  formatting:
-    name: cargo fmt
+  cargo-fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,30 +47,23 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
-      - name: Rustfmt Check
-        uses: actions-rust-lang/rustfmt@v1
+      - uses: actions-rust-lang/rustfmt@v1
   build-and-release:
-    needs: [test, formatting]
+    needs: [ cargo-test, cargo-fmt ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
       checks: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Setup Zig
-        uses: mlugg/setup-zig@v1
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: 'Setup zigbuild'
-        run: cargo install --locked cargo-zigbuild cargo-bump
-      - name: Add must target
-        run: rustup target add x86_64-unknown-linux-musl
-      - name: Generate a changelog
-        uses: orhun/git-cliff-action@v4
+      - uses: mlugg/setup-zig@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo install --locked cargo-zigbuild cargo-bump
+      - run: rustup target add x86_64-unknown-linux-musl
+      - uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
           args: -v --unreleased --bump --strip header --repository=${{ github.workspace }}
@@ -57,13 +78,12 @@ jobs:
           cargo bump $next_version_plain
       - name: 'Print the changelog for ${{ steps.git-cliff.outputs.version }}'
         run: cat "${{ steps.git-cliff.outputs.changelog }}"
-      - name: Build
-        run: cargo zigbuild --target x86_64-unknown-linux-musl --release
-      - name: Create Release
-        id: create_release
+      - run: cargo zigbuild --target x86_64-unknown-linux-musl --release
+      - name: 'Create Release ${{ steps.git-cliff.outputs.version }}'
+        if: ${{ github.event.inputs.skip_release != 'true' }}
         uses: ncipollo/release-action@v1
         with:
-          tag: v${{ steps.git-cliff.outputs.version }}
+          tag: ${{ steps.git-cliff.outputs.version }}
           bodyFile: CHANGES.md
           prerelease: true
           artifacts: ./target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt
