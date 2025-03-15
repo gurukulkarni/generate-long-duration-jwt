@@ -16,7 +16,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: |
           cargo install cargo2junit grcov rust-covfix;
-          cargo test --features coverage $CARGO_OPTIONS -- --format json | cargo2junit > results.xml;
+          cargo test $CARGO_OPTIONS -- --format json | cargo2junit > results.xml;
           zip -0 ccov.zip `find . \( -name "$PROJECT_NAME.*.gc*" \) -print`;
           grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" --ignore "tests/*" -o lcov.info;
           rust-covfix -o lcov_correct.info lcov.info;
