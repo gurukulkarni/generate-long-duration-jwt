@@ -14,30 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: |
-          cargo install cargo2junit grcov rust-covfix;
-          cargo test $CARGO_OPTIONS -- --format json | cargo2junit > results.xml;
-          zip -0 ccov.zip `find . \( -name "$PROJECT_NAME.*.gc*" \) -print`;
-          grcov ccov.zip -s . -t lcov --llvm --branch --ignore-not-existing --ignore "/*" --ignore "tests/*" -o lcov.info;
-          rust-covfix -o lcov_correct.info lcov.info;
-        env:
-          PROJECT_NAME: generate-long-duration-jwt
-          CARGO_INCREMENTAL: 0
-          RUSTFLAGS: -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort
-          RUSTDOCFLAGS: -Cpanic=abort
+      - run: cargo +stable install cargo-llvm-cov --locked
+      - run: cargo llvm-cov --ignore-run-fail --json --output-path=target/llvm-cov/report.json
+      # - run: cargo llvm-cov --ignore-run-fail --html
+      - run: cargo install cargo2junit
+      - run: cargo2junit target/llvm-cov/report.json > target/llvm-cov/report.xml
       - name: Upload test results
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
           check_name: Test Results
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: results.xml
-      - name: Upload to CodeCov
-        uses: codecov/codecov-action@v1
-        with:
-          # required for private repositories:
-          # token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./lcov.info
-          fail_ci_if_error: true
+          files: target/llvm-cov/report.xml
   # Check formatting with rustfmt
   cargo-fmt:
     runs-on: ubuntu-latest
