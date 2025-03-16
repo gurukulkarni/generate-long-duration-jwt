@@ -14,16 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo install cargo-llvm-cov cargo2junit --locked
-      - run: cargo llvm-cov --ignore-run-fail --html
-      - run: cargo test -- --format=json > target/test-results.json
-      - run: cargo2junit target/test-results.json > target/test-results.xml
-      - name: Upload test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          check_name: Test Results
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          files: target/test-results.xml
+          toolchain: nightly
+      - run: cargo install cargo-llvm-cov --locked
+      - run: cargo llvm-cov --ignore-run-fail --html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llvm-cov-html
+          path: target/llvm-cov/html
   # Check formatting with rustfmt
   cargo-fmt:
     runs-on: ubuntu-latest
@@ -49,6 +47,9 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo install --locked cargo-zigbuild cargo-bump
       - run: rustup target add x86_64-unknown-linux-musl
+      - uses: actions/download-artifact@v4
+        with:
+          name: llvm-cov-html
       - uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
@@ -72,7 +73,7 @@ jobs:
           tag: ${{ steps.git-cliff.outputs.version }}
           bodyFile: CHANGES.md
           prerelease: true
-          artifacts: ./target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt
+          artifacts: './target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt,llvm-cov-html'
           artifactContentType: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
