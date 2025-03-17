@@ -1,4 +1,4 @@
-name: Test, Format, Build and Release
+name: Test, Build and Release
 on:
   workflow_dispatch:
     inputs:
@@ -47,7 +47,8 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo install --locked cargo-zigbuild cargo-bump
       - run: rustup target add x86_64-unknown-linux-musl
-      - uses: actions/download-artifact@v4
+      - id: coverage-report
+        uses: actions/download-artifact@v4
         with:
           name: llvm-cov-html
       - uses: orhun/git-cliff-action@v4
@@ -73,7 +74,7 @@ jobs:
           tag: ${{ steps.git-cliff.outputs.version }}
           bodyFile: CHANGES.md
           prerelease: true
-          artifacts: './target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt,./llvm-cov-html'
+          artifacts: './target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt,${{ steps.coverage-report.outputs.download-path	 }}'
           artifactContentType: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,9 +1,66 @@
 use clap::{Parser, ValueEnum};
+use env_logger;
+use log::{debug, error, info};
 use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs::File;
 use std::io::Write;
+
+#[tokio::main]
+async fn main() {
+    // Initialize the logger
+    env_logger::init();
+
+    // Parse command line arguments using clap
+    let args = Cli::parse();
+    debug!("all input arguments: {:?}", &args);
+
+    let url = args.get_url();
+    let unit = args.get_unit();
+    let value = args.get_value();
+    let access_token = args.get_access_token();
+    let refresh_token = args.get_refresh_token();
+    let output_file = args.get_output_file();
+
+    // Create request headers
+    let mut headers = HeaderMap::new();
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", access_token)).unwrap());
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+
+    // Create request body
+    let body = JwtRequest { refresh_token, unit, value };
+
+    // Send request
+    let client = reqwest::Client::new();
+    let response = client.post(&url).headers(headers).json(&body).send().await.expect("Failed to send request");
+
+    // Handle response
+    let status = response.status();
+    debug!("Response Status: {:?}", status);
+    let response_body = response.text().await.expect("Failed to read response body");
+
+    if !status.is_success() {
+        let error_response: ErrorResponse = serde_json::from_str(&response_body).expect("Failed to parse error response");
+        error!("Error Response: {:?}", error_response);
+        std::process::exit(1);
+    }
+
+    let jwt_response: JwtResponse = serde_json::from_str(&response_body).expect("Failed to parse JWT response");
+    debug!("JWT Response: {:?}", jwt_response);
+
+    let mut output_path = std::path::PathBuf::from(&output_file);
+    if output_path.is_dir() {
+        output_path.push("long_duration_jwt.json");
+    }
+
+    let mut file = File::create(&output_path).expect("Failed to create output file");
+    file.write_all(response_body.clone().as_bytes()).expect("Failed to write to output file");
+
+    let absolute_path = std::fs::canonicalize(&output_path).expect("Failed to get absolute path");
+    info!("wrote {:?}", absolute_path);
+}
 
 #[derive(Parser)]
 #[clap(
@@ -12,6 +69,7 @@ use std::io::Write;
     author = "Author Name <kulkarni@safenow.de>",
     about = "Generates a long duration JWT"
 )]
+#[derive(Debug)]
 pub struct Cli {
     #[clap(short = 'l', long = "url", value_name = "URL", help = "Base URL of account authentication service")]
     url: String,
@@ -88,6 +146,10 @@ impl Cli {
     fn get_url(&self) -> String {
         format!("{}/v1/create-new-jwt", self.get_base_url())
     }
+
+    fn get_output_file(&self) -> &str {
+        &self.output
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -119,53 +181,6 @@ struct JwtRequest {
     refresh_token: String,
     unit: String,
     value: i64,
-}
-
-#[tokio::main]
-async fn main() {
-    // Parse command line arguments using clap
-    let args = Cli::parse();
-
-    let url = args.get_url();
-    let unit = args.get_unit();
-    let value = args.get_value();
-    let access_token = args.get_access_token();
-    let refresh_token = args.get_refresh_token();
-    let output_file = args.output;
-
-    // Create request headers
-    let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", access_token)).unwrap());
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-
-    // Create request body
-    let body = JwtRequest { refresh_token, unit, value };
-
-    // Send request
-    let client = reqwest::Client::new();
-    let response = client.post(&url).headers(headers).json(&body).send().await.expect("Failed to send request");
-
-    // Handle response
-    let status = response.status();
-    let response_body = response.text().await.expect("Failed to read response body");
-
-    if status.is_success() {
-        let jwt_response: JwtResponse = serde_json::from_str(&response_body).expect("Failed to parse JWT response");
-        println!("JWT Response: {:?}", jwt_response);
-
-        // Write the success response JSON to the output file
-        let mut file = File::create(&output_file).expect("Failed to create output file");
-        file.write_all(response_body.as_bytes()).expect("Failed to write to output file");
-
-        // Log the absolute file path
-        let absolute_path = std::fs::canonicalize(&output_file).expect("Failed to get absolute path");
-        println!("Output written to: {:?}", absolute_path);
-    } else {
-        let error_response: ErrorResponse = serde_json::from_str(&response_body).expect("Failed to parse error response");
-        eprintln!("Error Response: {:?}", error_response);
-        std::process::exit(1); // Exit with error code 1
-    }
 }
 
 #[cfg(test)]
