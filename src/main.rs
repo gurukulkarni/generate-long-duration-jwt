@@ -1,6 +1,6 @@
 use clap::{Parser, ValueEnum};
 use env_logger;
-use log::{error, info, debug};
+use log::{debug, error, info};
 use reqwest::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::env;
@@ -60,7 +60,6 @@ async fn main() {
 
     let absolute_path = std::fs::canonicalize(&output_path).expect("Failed to get absolute path");
     info!("wrote {:?}", absolute_path);
-
 }
 
 #[derive(Parser)]
@@ -70,7 +69,6 @@ async fn main() {
     author = "Author Name <kulkarni@safenow.de>",
     about = "Generates a long duration JWT"
 )]
-
 #[derive(Debug)]
 pub struct Cli {
     #[clap(short = 'l', long = "url", value_name = "URL", help = "Base URL of account authentication service")]

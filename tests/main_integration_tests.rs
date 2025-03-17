@@ -108,10 +108,7 @@ mod tests {
 
         let mut server = mockito::Server::new();
         let response_body = r#"{"personId":"9d129ad9-d44b-4ad2-8c21-88521ab24f05","accessToken":"jwtHeader.jwtBody.jwtSigType-jwtSig","refreshToken":"jwtHeader2.jwtBody2.jwtSigType2-jwtSig2"}"#;
-        let mock = server.mock("POST", "/v1/create-new-jwt")
-            .with_status(200)
-            .with_body(response_body)
-            .create();
+        let mock = server.mock("POST", "/v1/create-new-jwt").with_status(200).with_body(response_body).create();
 
         let mut cmd = Command::cargo_bin("generate-long-duration-jwt").unwrap();
         cmd.arg("--url")
@@ -144,10 +141,7 @@ mod tests {
 
         let mut server = mockito::Server::new();
         let response_body = r#"{"personId":"9d129ad9-d44b-4ad2-8c21-88521ab24f05","accessToken":"jwtHeader.jwtBody.jwtSigType-jwtSig","refreshToken":"jwtHeader2.jwtBody2.jwtSigType2-jwtSig2"}"#;
-        let mock = server.mock("POST", "/v1/create-new-jwt")
-            .with_status(200)
-            .with_body(response_body)
-            .create();
+        let mock = server.mock("POST", "/v1/create-new-jwt").with_status(200).with_body(response_body).create();
 
         let temp_dir = tempdir().unwrap();
 
