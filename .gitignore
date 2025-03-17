@@ -21,3 +21,4 @@ target/
 .venv/**
 
 .idea/**
+**/long_duration_jwt.json
