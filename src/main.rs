@@ -21,8 +21,7 @@ async fn main() {
     let value = args.get_value();
     let access_token = args.get_access_token();
     let refresh_token = args.get_refresh_token();
-    let output_file = args.output;
-
+    let output_file = args.get_output_file();
 
     // Create request headers
     let mut headers = HeaderMap::new();
@@ -51,10 +50,15 @@ async fn main() {
     let jwt_response: JwtResponse = serde_json::from_str(&response_body).expect("Failed to parse JWT response");
     debug!("JWT Response: {:?}", jwt_response);
 
-    let mut file = File::create(&output_file).expect("Failed to create output file");
+    let mut output_path = std::path::PathBuf::from(&output_file);
+    if output_path.is_dir() {
+        output_path.push("long_duration_jwt.json");
+    }
+
+    let mut file = File::create(&output_path).expect("Failed to create output file");
     file.write_all(response_body.clone().as_bytes()).expect("Failed to write to output file");
 
-    let absolute_path = std::fs::canonicalize(&output_file).expect("Failed to get absolute path");
+    let absolute_path = std::fs::canonicalize(&output_path).expect("Failed to get absolute path");
     info!("wrote {:?}", absolute_path);
 
 }
@@ -143,6 +147,10 @@ impl Cli {
 
     fn get_url(&self) -> String {
         format!("{}/v1/create-new-jwt", self.get_base_url())
+    }
+
+    fn get_output_file(&self) -> &str {
+        &self.output
     }
 }
 
