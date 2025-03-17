@@ -73,7 +73,7 @@ jobs:
           tag: ${{ steps.git-cliff.outputs.version }}
           bodyFile: CHANGES.md
           prerelease: true
-          artifacts: './target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt,llvm-cov-html'
+          artifacts: './target/x86_64-unknown-linux-musl/release/generate-long-duration-jwt,./llvm-cov-html'
           artifactContentType: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
